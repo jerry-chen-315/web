@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style type="text/css">
+        #tab_data
+        {
+            border-collapse: collapse;
+            margin: 0 auto;
+            text-align: center;
+            <!--word-break: keep-all;-->
+        }
+        #tab_data td, #tab_data th
+        {
+            border: 1px solid #cad9ea;
+            color: #666;
+            height: 30px;
+            width: 100px;
+            word-wrap: break-word;
+        }
+        #tab_data thead th
+        {
+            background-color: #CCE8EB;
+            width: 100px;
+        }
+        #tab_data tr:nth-child(odd)
+        {
+            background: #fff;
+        }
+        #tab_data tr:nth-child(even)
+        {
+            background: #F5FAFA;
+        }
+
+        #div_download
+        {
+            width: 1370px;
+            height: 30px;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>服务器性能指标查询</h1>
+    </div>
+    <div id="content">
+        <div id="div_pars">
+            <!--<form>-->
+            <form name="queryForm" method="post" enctype="multipart/form-data" onsubmit="return validateForm()">
+                {% csrf_token %}
+               <table id="tab_pars">
+                <tr>
+                    <td><b>起始时间</b></td>
+                    <td><b>截止时间</b></td>
+                    <td><b>指标名称</b></td>
+                </tr>
+                <tr>
+                    <td><input type="date" name="start_time" required></td>
+                    <td><input type="date" name="end_time" required></td>
+                    <td><select id="metric_name" name="metric_name" onchange="">
+				          <option value="all">all</option>
+                          <option value="cpu">cpu</option>
+                          <option value="mem">memory</option>
+                          </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><input id="singleRadio" type="radio" name="query_type" value="single" checked><b>单个查询</b></td>
+                    <td><input id="ipaddress" type="text" name="ipaddress" size="30" placeholder="don't input if you want to batch query" autocomplete="on"></td>
+                </tr>
+                <tr>
+                    <td><input id="batchRadio" type="radio" name="query_type" value="batch"><b>批量查询</b></td>
+                    <td>
+                        <label for="file">选择text文本</label>
+                        <input id="hostnameIP" type="file" accept="text/plain" content="test" name="hostname_ip">
+                    </td>
+                </tr>
+                <tr>
+                    <td><input type="submit" value=" 查询 "></td>
+                </tr>
+              </table>
+            </form>
+
+        </div>
+<script type="text/javascript">
+function downloadCSV(csv, filename) {
+    var csvFile;
+    var downloadLink;
+
+    // CSV file
+    csvFile = new Blob([csv], {type: "text/csv"});
+
+    // Download link
+    downloadLink = document.createElement("a");
+
+    // File name
+    downloadLink.download = filename;
+
+    // Create a link to the file
+    downloadLink.href = window.URL.createObjectURL(csvFile);
+
+    // Hide download link
+    downloadLink.style.display = "none";
+
+    // Add the link to DOM
+    document.body.appendChild(downloadLink);
+
+    // Click download link
+    downloadLink.click();
+}
+
+function exportTableToCSV(filename) {
+    var csv = [];
+    var theTable = document.getElementById("tab_data");
+    var rows = theTable.querySelectorAll("table tr");
+
+    for (var i = 0; i < rows.length; i++) {
+        var row = [], cols = rows[i].querySelectorAll("td, th");
+
+        for (var j = 0; j < cols.length; j++)
+            row.push(cols[j].innerText);
+
+        csv.push(row.join(","));
+    }
+
+    // Download CSV file
+    downloadCSV(csv.join("\n"), filename);
+}
+</script>
+        <div id="div_download">
+            <button onclick="exportTableToCSV('server_metric.csv')" style="float:right;">导出数据至CSV文件</button>
+        </div>
+        <div id="div_data">
+            <table id="tab_data">
+              <!--<tr>-->
+                  <!--<th>hostname</th>-->
+                  <!--<th>ipaddress</th>-->
+                  <!--<th>query_type</th>-->
+                  <!--<th>date_range</th>-->
+                  <!--<th>cpu_avg</th>-->
+                  <!--<th>cpu_max</th>-->
+                  <!--<th>mem_avg</th>-->
+                  <!--<th>cpu_max</th>-->
+              <!--</tr>-->
+              {% for row in res.values %}
+              <tr>
+              {% for data in row.values %}
+                  <td nowrap="all">{{ data }}</td>
+              {% endfor %}
+             </tr>
+              {% endfor %}
+            </table>
+            <!--<span id="spanFirst">第一页</span> <span id="spanPre">上一页</span> <span id="spanNext">下一页</span> <span id="spanLast">最后一页</span> 第<span id="spanPageNum"></span>页/共<span id="spanTotalPage"></span>页-->
+        </div>
+        <div align="center">
+            <span id="spanFirst">第一页</span> <span id="spanPre">上一页</span> <span id="spanNext">下一页</span> <span id="spanLast">最后一页</span> 第<span id="spanPageNum"></span>页/共<span id="spanTotalPage"></span>页
+        </div>
+    </div>
+
+<script type="text/javascript">
+// JavaScript Document By lishewen
+var theTable = document.getElementById("tab_data");
+var totalPage = document.getElementById("spanTotalPage");
+var pageNum = document.getElementById("spanPageNum");
+
+var spanPre = document.getElementById("spanPre");
+var spanNext = document.getElementById("spanNext");
+var spanFirst = document.getElementById("spanFirst");
+var spanLast = document.getElementById("spanLast");
+
+<!--var totalPaget = document.getElementById("spanTotalPaget");-->
+<!--var pageNumt = document.getElementById("spanPageNumt");-->
+
+<!--var spanPret = document.getElementById("spanPret");-->
+<!--var spanNextt = document.getElementById("spanNextt");-->
+<!--var spanFirstt = document.getElementById("spanFirstt");-->
+<!--var spanLastt = document.getElementById("spanLastt");-->
+
+var numberRowsInTable = theTable.rows.length;
+var pageSize = 20;
+var page = 1;
+
+//下一页
+function next(){
+
+    hideTable();
+
+    currentRow = pageSize * page;
+    maxRow = currentRow + pageSize;
+    if ( maxRow > numberRowsInTable ) maxRow = numberRowsInTable;
+    for ( var i = currentRow; i< maxRow; i++ ){
+        theTable.rows[i].style.display = '';
+    }
+    page++;
+
+    if ( maxRow == numberRowsInTable ) { nextText(); lastText(); }
+    showPage();
+    preLink();
+    firstLink();
+}
+
+//上一页
+function pre(){
+
+    hideTable();
+
+    page--;
+
+    currentRow = pageSize * page;
+    maxRow = currentRow - pageSize;
+    if ( currentRow > numberRowsInTable ) currentRow = numberRowsInTable;
+    for ( var i = maxRow; i< currentRow; i++ ){
+        theTable.rows[i].style.display = '';
+    }
+
+
+    if ( maxRow == 0 ){ preText(); firstText(); }
+    showPage();
+    nextLink();
+    lastLink();
+}
+
+//第一页
+function first(){
+    hideTable();
+    page = 1;
+    for ( var i = 0; i<pageSize; i++ ){
+        theTable.rows[i].style.display = '';
+    }
+    showPage();
+
+    preText();
+    nextLink();
+    lastLink();
+}
+
+//最后一页
+function last(){
+    hideTable();
+    page = pageCount();
+    currentRow = pageSize * (page - 1);
+    for ( var i = currentRow; i<numberRowsInTable; i++ ){
+        theTable.rows[i].style.display = '';
+    }
+    showPage();
+
+    preLink();
+    nextText();
+    firstLink();
+}
+
+function hideTable(){
+    for ( var i = 0; i<numberRowsInTable; i++ ){
+        theTable.rows[i].style.display = 'none';
+    }
+}
+
+function showPage(){
+    pageNum.innerHTML = page;
+
+}
+
+//总共页数
+function pageCount(){
+    var count = 0;
+    if ( numberRowsInTable%pageSize != 0 ) count = 1;
+    return parseInt(numberRowsInTable/pageSize) + count;
+}
+
+//显示链接
+function preLink(){ spanPre.innerHTML = "<a href='javascript:pre();'>上一页</a>";}
+function preText(){ spanPre.innerHTML = "上一页";}
+
+function nextLink(){ spanNext.innerHTML = "<a href='javascript:next();'>下一页</a>";}
+function nextText(){ spanNext.innerHTML = "下一页";}
+
+function firstLink(){ spanFirst.innerHTML = "<a href='javascript:first();'>第一页</a>";}
+function firstText(){ spanFirst.innerHTML = "第一页";}
+
+function lastLink(){ spanLast.innerHTML = "<a href='javascript:last();'>最后一页</a>";}
+function lastText(){ spanLast.innerHTML = "最后一页";}
+
+//隐藏表格
+function hide(){
+    for ( var i = pageSize; i<numberRowsInTable; i++ ){
+        theTable.rows[i].style.display = 'none';
+    }
+
+    totalPage.innerHTML = pageCount();
+    pageNum.innerHTML = '1';
+
+    <!--totalPaget.innerHTML = pageCount();-->
+    <!--pageNumt.innerHTML = '1';-->
+
+    nextLink();
+    lastLink();
+}
+
+hide();
+</script>
+<script>
+function validateForm() {
+    var vRadio = document.forms["queryForm"]["query_type"].value;
+	var vAddress = document.forms["queryForm"]["ipaddress"].value;
+	var vHostIP = document.forms["queryForm"]["hostname_ip"].value;
+
+	if (vRadio == "single" && vAddress == "") {
+	    alert("请输入IP地址再提交.");
+		return false;
+	}
+	else if (vRadio == "batch" && vHostIP == "") {
+	    alert("请上传文件后再提交.");
+		return false;
+	}
+}
+</script>
+
+
+</body>
+</html>

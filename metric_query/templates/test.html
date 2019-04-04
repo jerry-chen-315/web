@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+   <li>test</li>
+   <table>
+
+   </table width="500" border="0" cellpadding="5" cellspacing="1" bgcolor="#999999">
+   {% for row in res.values %}
+   <tr>
+       {% for data in row.values %}
+       <td>{{ data }}</td>
+       {% endfor %}
+   </tr>
+   <li>{{ data }}</li>
+   {% endfor %}
+</body>
+</html>
